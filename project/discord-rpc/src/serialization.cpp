@@ -149,7 +149,7 @@ size_t JsonWriteRichPresenceObj(char *dest, size_t maxLen, int nonce, int pid, c
 				{
 					WriteArray buttons(writer, "buttons");
 
-					for (int i = 0; i < sizeof(presence->buttons) / sizeof(DiscordButton); i++)
+					for (size_t i = 0; i < sizeof(presence->buttons) / sizeof(DiscordButton); i++)
 					{
 						const DiscordButton button = presence->buttons[i];
 

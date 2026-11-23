@@ -11,7 +11,7 @@ on:
       - 'hxformat.json'
   workflow_dispatch:
 jobs:
-  Job:
+  Desktop:
     runs-on: ${{matrix.os}}
     strategy:
       fail-fast: false
@@ -40,3 +40,53 @@ jobs:
       - name: Build Windows
         if: startsWith(matrix.os, 'windows')
         run: cd sample && haxe build-win.hxml
+
+  Android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+        with:
+          submodules: true
+
+      - name: Setup Haxe
+        uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: 4.3.7
+
+      - name: Setup Android NDK
+        id: setup-ndk
+        uses: nttld/setup-ndk@main
+        with:
+          ndk-version: r21e
+
+      - name: Install Dependencies
+        run: |
+          haxelib install hxcpp --quiet
+          haxelib dev hxdiscord_rpc .
+
+      - name: Build Android
+        env:
+          ANDROID_NDK_ROOT: ${{steps.setup-ndk.outputs.ndk-path}}
+        run: cd sample && haxe build-android.hxml
+
+  iOS:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+        with:
+          submodules: true
+
+      - name: Setup Haxe
+        uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: 4.3.7
+
+      - name: Install Dependencies
+        run: |
+          haxelib install hxcpp --quiet
+          haxelib dev hxdiscord_rpc .
+
+      - name: Build iOS
+        run: cd sample && haxe build-ios.hxml

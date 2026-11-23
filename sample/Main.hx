@@ -8,6 +8,12 @@ class Main
 {
 	public static function main():Void
 	{
+		if (!Discord.IsSupported())
+		{
+			Sys.println('Discord RPC is not available on this platform.');
+			return;
+		}
+
 		Sys.println('Initializing Discord RPC...');
 
 		final handlers:DiscordEventHandlers = new DiscordEventHandlers();
@@ -40,7 +46,7 @@ class Main
 	private static function onReady(request:cpp.RawConstPointer<DiscordUser>):Void
 	{
 		final username:String = request[0].username;
-		final globalName:String = request[0].username;
+		final globalName:String = request[0].globalName;
 		final discriminator:Int = Std.parseInt(request[0].discriminator);
 
 		if (discriminator != 0)

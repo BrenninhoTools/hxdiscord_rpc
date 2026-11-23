@@ -8,6 +8,10 @@
 #include <chrono>
 #include <mutex>
 
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
+
 #ifndef DISCORD_DISABLE_IO_THREAD
 #include <condition_variable>
 #include <thread>
@@ -300,15 +304,33 @@ static bool DeregisterForEvent(const char *evtName)
 	return false;
 }
 
+bool Discord_IsSupported(void)
+{
+#if defined(__ANDROID__) || (defined(__APPLE__) && TARGET_OS_IPHONE)
+	return false;
+#else
+	return true;
+#endif
+}
+
 void Discord_Initialize(const char *applicationId, DiscordEventHandlers *handlers, bool autoRegister, const char *optionalSteamId)
 {
-	IoThread = new (std::nothrow) IoThreadHolder();
+	if (!Discord_IsSupported())
+		return;
+
+	if (IoThread == nullptr)
+		IoThread = new (std::nothrow) IoThreadHolder();
 
 	if (IoThread == nullptr)
 		return;
 
 	if (autoRegister)
-		Discord_RegisterSteamGame(applicationId, optionalSteamId && optionalSteamId[0] ? optionalSteamId : nullptr);
+	{
+		if (optionalSteamId && optionalSteamId[0])
+			Discord_RegisterSteamGame(applicationId, optionalSteamId);
+		else
+			Discord_Register(applicationId, nullptr);
+	}
 
 	Pid = GetProcessId();
 

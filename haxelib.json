@@ -1,16 +1,18 @@
 {
 	"name": "hxdiscord_rpc",
-	"url": "https://github.com/MAJigsaw77/hxdiscord_rpc",
+	"url": "https://github.com/BrenninhoTools/hxdiscord_rpc",
 	"license": "MIT",
 	"tags": [
 		"cpp",
 		"discord",
 		"haxe",
-		"rpc"
+		"rpc",
+		"android",
+		"ios"
 	],
 	"description": "Haxe/hxcpp @:native bindings for Discord RPC.",
-	"version": "1.3.0",
-	"releasenote": "Improved some things for Haxe 4.3.",
+	"version": "1.4.0",
+	"releasenote": "Added Android and iOS support, Discord.IsSupported(), and fixed autoRegister without a Steam ID.",
 	"contributors": [
 		"MAJigsaw77"
 	],

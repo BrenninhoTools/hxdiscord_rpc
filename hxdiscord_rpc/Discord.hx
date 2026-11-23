@@ -23,6 +23,9 @@ extern class Discord
 	@:native('DISCORD_RPC_VERSION')
 	static var RPC_VERSION:Int;
 
+	@:native('Discord_IsSupported')
+	static function IsSupported():Bool;
+
 	/**
 	 * Registers the application.
 	 *

@@ -103,6 +103,9 @@ void Discord_Register(const char *applicationId, const char *command)
 
 void Discord_RegisterSteamGame(const char *applicationId, const char *steamId)
 {
+	if (!steamId || !steamId[0])
+		return;
+
 	wchar_t appId[32];
 	MultiByteToWideChar(CP_UTF8, 0, applicationId, -1, appId, 32);
 

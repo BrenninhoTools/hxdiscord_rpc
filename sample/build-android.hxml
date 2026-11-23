@@ -1,0 +1,9 @@
+-cp ./
+-D analyzer-optimize
+-D DISCORD_DISABLE_IO_THREAD
+-D android
+-D HXCPP_ARM64
+-D PLATFORM=android-21
+-lib hxdiscord_rpc
+-main Main
+-cpp bin-android

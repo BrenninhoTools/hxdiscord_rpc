@@ -1,0 +1,9 @@
+-cp ./
+-D analyzer-optimize
+-D DISCORD_DISABLE_IO_THREAD
+-D iphoneos
+-D HXCPP_ARM64
+-D static_link
+-lib hxdiscord_rpc
+-main Main
+-cpp bin-ios

@@ -90,7 +90,10 @@ void Discord_Register(const char *applicationId, const char *command)
 
 void Discord_RegisterSteamGame(const char *applicationId, const char *steamId)
 {
+	if (!steamId || !steamId[0])
+		return;
+
 	char command[256];
-	snprintf(command, 256, "steam://rungameid/%s", steamId);
+	snprintf(command, sizeof(command), "steam://rungameid/%s", steamId);
 	Discord_Register(applicationId, command);
 }
