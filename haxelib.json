@@ -11,8 +11,8 @@
 		"ios"
 	],
 	"description": "Haxe/hxcpp @:native bindings for Discord RPC.",
-	"version": "1.4.0",
-	"releasenote": "Added Android and iOS support, Discord.IsSupported(), and fixed autoRegister without a Steam ID.",
+	"version": "1.5.0",
+	"releasenote": "Rich Presence on Android through the Discord Social SDK.",
 	"contributors": [
 		"MAJigsaw77"
 	],

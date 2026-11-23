@@ -4,6 +4,8 @@
 
 	<set name="DISCORD_RPC_MOBILE" value="1" if="android || iphoneos || iphonesim || iphone" />
 
+	<set name="DISCORD_RPC_SOCIAL" value="1" if="android DISCORD_SOCIAL_SDK" />
+
 	<files id="haxe">
 		<compilerflag value="-I${haxelib:hxdiscord_rpc}/project/discord-rpc/include" />
 
@@ -18,6 +20,16 @@
 
 	<files id="discord-rpc">
 		<compilerflag value="-I${haxelib:hxdiscord_rpc}/project/discord-rpc/include" />
+
+		<section if="DISCORD_RPC_SOCIAL">
+			<compilerflag value="-I${DISCORD_SOCIAL_SDK}/include" />
+			<compilerflag value="-std=c++17" />
+
+			<file name="${haxelib:hxdiscord_rpc}/project/discord-rpc/src/social_bridge.cpp" />
+			<file name="${haxelib:hxdiscord_rpc}/project/discord-rpc/src/discord_rpc_social.cpp" />
+		</section>
+
+		<section unless="DISCORD_RPC_SOCIAL">
 
 		<compilerflag value="-DRAPIDJSON_SSE2" if="MSVC_VER" unless="HXCPP_M64" />
 
@@ -57,9 +69,19 @@
 		<file name="${haxelib:hxdiscord_rpc}/project/discord-rpc/src/discord_rpc.cpp" />
 		<file name="${haxelib:hxdiscord_rpc}/project/discord-rpc/src/rpc_connection.cpp" />
 		<file name="${haxelib:hxdiscord_rpc}/project/discord-rpc/src/serialization.cpp" />
+		</section>
 	</files>
 
 	<target id="haxe">
+		<section if="DISCORD_RPC_SOCIAL">
+			<flag value="-L${DISCORD_SOCIAL_SDK}/jni/arm64-v8a" if="HXCPP_ARM64" />
+			<flag value="-L${DISCORD_SOCIAL_SDK}/jni/armeabi-v7a" if="HXCPP_ARMV7" />
+			<flag value="-L${DISCORD_SOCIAL_SDK}/jni/x86_64" if="HXCPP_X86_64" />
+			<flag value="-L${DISCORD_SOCIAL_SDK}/jni/x86" if="HXCPP_X86" />
+
+			<lib name="-ldiscord_partner_sdk" />
+		</section>
+
 		<section unless="DISCORD_RPC_MOBILE">
 			<section if="mingw">
 				<lib name="-lpsapi" />
