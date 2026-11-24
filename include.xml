@@ -2,6 +2,8 @@
 <project>
 	<section if="android DISCORD_SOCIAL_SDK">
 		<dependency name="discord-social-sdk" path="${DISCORD_SOCIAL_SDK}/gradle" />
+		<dependency name="androidx.core:core:1.13.1" />
+		<dependency name="androidx.browser:browser:1.8.0" />
 		<java path="project/android" />
 		<config:android extension="org.haxe.extension.DiscordSocialInit" />
 		<config:android permission="android.permission.ACCESS_NETWORK_STATE" />
