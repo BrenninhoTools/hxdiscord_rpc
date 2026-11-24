@@ -36,4 +36,6 @@ namespace hxdiscord_social
 	void Tick();
 	void Update(const Presence &presence, ErrorCallback onError);
 	void Clear();
+	void SetOnline(bool online);
+	bool Online();
 }

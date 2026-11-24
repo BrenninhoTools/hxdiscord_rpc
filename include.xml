@@ -4,5 +4,6 @@
 		<dependency name="discord-social-sdk" path="${DISCORD_SOCIAL_SDK}/gradle" />
 		<java path="project/android" />
 		<config:android extension="org.haxe.extension.DiscordSocialInit" />
+		<config:android permission="android.permission.ACCESS_NETWORK_STATE" />
 	</section>
 </project>
