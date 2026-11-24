@@ -18,18 +18,18 @@
 		<compilerflag value="-DDISCORD_DISABLE_IO_THREAD" if="DISCORD_DISABLE_IO_THREAD" />
 	</files>
 
-	<files id="discord-rpc">
+	<files id="discord-social" cxx_standard="17" if="DISCORD_RPC_SOCIAL">
+		<compilerflag value="-I${haxelib:hxdiscord_rpc}/project/discord-rpc/include" />
+		<compilerflag value="-I${DISCORD_SOCIAL_SDK}/include" />
+
+		<file name="${haxelib:hxdiscord_rpc}/project/discord-rpc/src/social_bridge.cpp" />
+		<file name="${haxelib:hxdiscord_rpc}/project/discord-rpc/src/discord_rpc_social.cpp" />
+	</files>
+
+	<files id="discord-rpc" unless="DISCORD_RPC_SOCIAL">
 		<compilerflag value="-I${haxelib:hxdiscord_rpc}/project/discord-rpc/include" />
 
-		<section if="DISCORD_RPC_SOCIAL">
-			<compilerflag value="-I${DISCORD_SOCIAL_SDK}/include" />
-			<compilerflag value="-std=c++17" />
-
-			<file name="${haxelib:hxdiscord_rpc}/project/discord-rpc/src/social_bridge.cpp" />
-			<file name="${haxelib:hxdiscord_rpc}/project/discord-rpc/src/discord_rpc_social.cpp" />
-		</section>
-
-		<section unless="DISCORD_RPC_SOCIAL">
+		<section>
 
 		<compilerflag value="-DRAPIDJSON_SSE2" if="MSVC_VER" unless="HXCPP_M64" />
 
@@ -98,6 +98,7 @@
 			</section>
 		</section>
 
-		<files id="discord-rpc" />
+		<files id="discord-social" if="DISCORD_RPC_SOCIAL" />
+		<files id="discord-rpc" unless="DISCORD_RPC_SOCIAL" />
 	</target>
 </xml>
