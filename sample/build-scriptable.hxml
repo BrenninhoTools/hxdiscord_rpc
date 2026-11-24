@@ -1,0 +1,6 @@
+-cp ./
+-D DISCORD_DISABLE_IO_THREAD
+-D scriptable
+-lib hxdiscord_rpc
+-main Main
+-cpp bin-scriptable

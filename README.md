@@ -18,6 +18,37 @@ Or through `Git`, if you want the latest updates
 haxelib git hxdiscord_rpc https://github.com/MAJigsaw77/hxdiscord_rpc.git
 ```
 
+### Usage
+
+The recommended way is `hxdiscord_rpc.DiscordEvents`. The Discord callbacks are installed on the C++ side and every event is stored in a native queue, so no Haxe function is ever passed to Discord RPC. It works on scriptable (cppia) builds, where `cpp.Function.fromStaticFunction` fails to compile, and on every compiler.
+
+```haxe
+import hxdiscord_rpc.DiscordEvents;
+
+DiscordEvents.init('YOUR_APPLICATION_ID');
+
+function update():Void
+{
+	DiscordEvents.update();
+	DiscordEvents.pollAll(function(event)
+	{
+		switch (event)
+		{
+			case Ready(user):
+				var presence = new DiscordPresence();
+				presence.details = 'Playing a song';
+				presence.state = 'Ação';
+				DiscordEvents.updatePresence(presence);
+			case Disconnected(code, message):
+			case Errored(code, message):
+			default:
+		}
+	});
+}
+```
+
+`DiscordPresence` keeps plain Haxe strings and sends them as UTF-8, so accents and emoji show correctly. The raw `Discord` and `Types` bindings are still available.
+
 ### Usage Example
 
 Check out the [Sample Folder](sample/) for an example on how to use this library.

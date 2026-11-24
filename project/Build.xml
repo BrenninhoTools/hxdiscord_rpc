@@ -24,6 +24,7 @@
 
 		<file name="${haxelib:hxdiscord_rpc}/project/discord-rpc/src/social_bridge.cpp" />
 		<file name="${haxelib:hxdiscord_rpc}/project/discord-rpc/src/discord_rpc_social.cpp" />
+		<file name="${haxelib:hxdiscord_rpc}/project/discord-rpc/src/discord_rpc_queue.cpp" />
 	</files>
 
 	<files id="discord-rpc" unless="DISCORD_RPC_SOCIAL">
@@ -69,6 +70,7 @@
 		<file name="${haxelib:hxdiscord_rpc}/project/discord-rpc/src/discord_rpc.cpp" />
 		<file name="${haxelib:hxdiscord_rpc}/project/discord-rpc/src/rpc_connection.cpp" />
 		<file name="${haxelib:hxdiscord_rpc}/project/discord-rpc/src/serialization.cpp" />
+		<file name="${haxelib:hxdiscord_rpc}/project/discord-rpc/src/discord_rpc_queue.cpp" />
 		</section>
 	</files>
 

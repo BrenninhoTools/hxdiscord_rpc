@@ -1,14 +1,12 @@
 package;
 
-import hxdiscord_rpc.Discord;
-import hxdiscord_rpc.Types;
-import sys.thread.Thread;
+import hxdiscord_rpc.DiscordEvents;
 
 class Main
 {
 	public static function main():Void
 	{
-		if (!Discord.IsSupported())
+		if (!DiscordEvents.supported)
 		{
 			Sys.println('Discord RPC is not available on this platform.');
 			return;
@@ -16,71 +14,48 @@ class Main
 
 		Sys.println('Initializing Discord RPC...');
 
-		final handlers:DiscordEventHandlers = new DiscordEventHandlers();
-		handlers.ready = cpp.Function.fromStaticFunction(onReady);
-		handlers.disconnected = cpp.Function.fromStaticFunction(onDisconnected);
-		handlers.errored = cpp.Function.fromStaticFunction(onError);
-		Discord.Initialize("345229890980937739", cpp.RawPointer.addressOf(handlers), false, null);
+		DiscordEvents.init('345229890980937739');
 
-		Thread.create(function():Void
+		final start:Float = Sys.time();
+
+		while (Sys.time() - start < 10)
 		{
-			while (true)
+			DiscordEvents.update();
+
+			DiscordEvents.pollAll(function(event:DiscordEvent):Void
 			{
-				#if DISCORD_DISABLE_IO_THREAD
-				Discord.UpdateConnection();
-				#end
+				switch (event)
+				{
+					case Ready(user):
+						if (user.discriminator != '0' && user.discriminator.length > 0)
+							Sys.println('Discord: Connected to user ${user.username}#${user.discriminator} (${user.globalName})');
+						else
+							Sys.println('Discord: Connected to user @${user.username} (${user.globalName})');
 
-				Discord.RunCallbacks();
+						final presence:DiscordPresence = new DiscordPresence();
+						presence.type = 3;
+						presence.state = 'West of House';
+						presence.details = 'Frustração';
+						presence.largeImageKey = 'canary-large';
+						presence.smallImageKey = 'ptb-small';
+						presence.button1Label = 'Test 1';
+						presence.button1Url = 'https://example.com';
+						presence.button2Label = 'Test 2';
+						presence.button2Url = 'https://discord.gg/fortnite';
+						DiscordEvents.updatePresence(presence);
+					case Disconnected(code, message):
+						Sys.println('Discord: Disconnected ($code:$message)');
+					case Errored(code, message):
+						Sys.println('Discord: Error ($code:$message)');
+					default:
+				}
+			});
 
-				Sys.sleep(2);
-			}
-		});
-
-		Sys.sleep(10);
+			Sys.sleep(0.5);
+		}
 
 		Sys.println('Shutting down Discord RPC...');
 
-		Discord.Shutdown();
-	}
-
-	private static function onReady(request:cpp.RawConstPointer<DiscordUser>):Void
-	{
-		final username:String = request[0].username;
-		final globalName:String = request[0].globalName;
-		final discriminator:Int = Std.parseInt(request[0].discriminator);
-
-		if (discriminator != 0)
-			Sys.println('Discord: Connected to user ${username}#${discriminator} ($globalName)');
-		else
-			Sys.println('Discord: Connected to user @${username} ($globalName)');
-
-		final discordPresence:DiscordRichPresence = new DiscordRichPresence();
-		discordPresence.type = DiscordActivityType_Watching;
-		discordPresence.state = "West of House";
-		discordPresence.details = "Frustration";
-		discordPresence.largeImageKey = "canary-large";
-		discordPresence.smallImageKey = "ptb-small";
-
-		final button:DiscordButton = new DiscordButton();
-		button.label = "Test 1";
-		button.url = "https://example.com";
-		discordPresence.buttons[0] = button;
-
-		final button:DiscordButton = new DiscordButton();
-		button.label = "Test 2";
-		button.url = "https://discord.gg/fortnite";
-		discordPresence.buttons[1] = button;
-
-		Discord.UpdatePresence(cpp.RawConstPointer.addressOf(discordPresence));
-	}
-
-	private static function onDisconnected(errorCode:Int, message:cpp.ConstCharStar):Void
-	{
-		Sys.println('Discord: Disconnected ($errorCode:$message)');
-	}
-
-	private static function onError(errorCode:Int, message:cpp.ConstCharStar):Void
-	{
-		Sys.println('Discord: Error ($errorCode:$message)');
+		DiscordEvents.shutdown();
 	}
 }
