@@ -78,7 +78,9 @@ def main():
 
         aar, libraries = patch_aar(archive.read(aar_name), args.keep_voice)
 
-    with open(os.path.join(args.output, 'discord_partner_sdk.aar'), 'wb') as handle:
+    module = os.path.join(args.output, 'gradle')
+    os.makedirs(module)
+    with open(os.path.join(module, 'discord_partner_sdk.aar'), 'wb') as handle:
         handle.write(aar)
 
     for abi, content in libraries.items():
@@ -87,7 +89,7 @@ def main():
         with open(os.path.join(folder, 'libdiscord_partner_sdk.so'), 'wb') as handle:
             handle.write(content)
 
-    with open(os.path.join(args.output, 'build.gradle'), 'w') as handle:
+    with open(os.path.join(module, 'build.gradle'), 'w') as handle:
         handle.write(BUILD_GRADLE)
 
     print('Discord Social SDK ready in ' + args.output + ' for ' + ', '.join(sorted(libraries)))

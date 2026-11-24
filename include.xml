@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <project>
 	<section if="android DISCORD_SOCIAL_SDK">
-		<dependency name="discord-social-sdk" path="${DISCORD_SOCIAL_SDK}" />
+		<dependency name="discord-social-sdk" path="${DISCORD_SOCIAL_SDK}/gradle" />
 		<java path="project/android" />
 		<config:android extension="org.haxe.extension.DiscordSocialInit" />
 	</section>
