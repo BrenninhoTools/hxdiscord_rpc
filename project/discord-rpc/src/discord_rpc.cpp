@@ -446,6 +446,11 @@ void Discord_ClearPresence(void)
 	Discord_UpdatePresence(nullptr);
 }
 
+void Discord_SetActivityName(const char *name)
+{
+	(void)name;
+}
+
 void Discord_Respond(const char *userId, DiscordActivityJoinRequestReply reply)
 {
 	if (!Connection || !Connection->IsOpen())

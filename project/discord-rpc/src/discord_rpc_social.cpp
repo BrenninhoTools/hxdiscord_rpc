@@ -168,6 +168,11 @@ void Discord_ClearPresence(void)
 	hxdiscord_social::Clear();
 }
 
+void Discord_SetActivityName(const char *name)
+{
+	hxdiscord_social::SetName(name);
+}
+
 void Discord_Respond(const char *userid, DiscordActivityJoinRequestReply reply)
 {
 	(void)userid;

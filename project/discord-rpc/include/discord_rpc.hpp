@@ -95,5 +95,6 @@ void Discord_UpdateConnection(void);
 #endif
 void Discord_UpdatePresence(const DiscordRichPresence *presence);
 void Discord_ClearPresence(void);
+void Discord_SetActivityName(const char *name);
 void Discord_Respond(const char *userid, DiscordActivityJoinRequestReply reply);
 void Discord_UpdateHandlers(DiscordEventHandlers *handlers);

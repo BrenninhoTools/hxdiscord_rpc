@@ -55,6 +55,7 @@ namespace hxdiscord_social
 	void Update(const Presence &presence);
 	void Clear();
 	void SetOnline(bool online);
+	void SetName(const char *name);
 	bool Online();
 	void SetStoragePath(const char *path);
 }

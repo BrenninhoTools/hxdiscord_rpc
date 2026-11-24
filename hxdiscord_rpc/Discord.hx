@@ -94,6 +94,9 @@ extern class Discord
 	@:native('Discord_ClearPresence')
 	static function ClearPresence():Void;
 
+	@:native('Discord_SetActivityName')
+	static function SetActivityName(name:cpp.ConstCharStar):Void;
+
 	/**
 	 * Responds to a user's request.
 	 *

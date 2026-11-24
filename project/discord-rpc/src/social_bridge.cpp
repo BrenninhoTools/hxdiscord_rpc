@@ -69,6 +69,7 @@ namespace
 	std::recursive_mutex Lock;
 	std::unique_ptr<discordpp::Client> Client;
 	std::optional<StoredPresence> Last;
+	std::optional<std::string> Name;
 	hxdiscord_social::EventCallback OnEvent = nullptr;
 
 	uint64_t ApplicationId = 0;
@@ -149,6 +150,8 @@ namespace
 	discordpp::Activity Build(const StoredPresence &presence)
 	{
 		discordpp::Activity activity;
+		if (Name)
+			activity.SetName(*Name);
 		activity.SetType(static_cast<discordpp::ActivityTypes>(presence.type));
 		activity.SetState(presence.state);
 		activity.SetDetails(presence.details);
@@ -632,6 +635,23 @@ namespace hxdiscord_social
 
 		if (IsReady())
 			Client->ClearRichPresence();
+	}
+
+	void SetName(const char *name)
+	{
+		std::lock_guard<std::recursive_mutex> guard(Lock);
+
+		std::optional<std::string> value = Text(name);
+		if (value == Name)
+			return;
+
+		Name = std::move(value);
+		if (Last)
+		{
+			Dirty = true;
+			Attempts = 0;
+			NextAttempt = Clock::time_point{};
+		}
 	}
 
 	void SetOnline(bool online)
