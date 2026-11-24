@@ -18,23 +18,6 @@ Or through `Git`, if you want the latest updates
 haxelib git hxdiscord_rpc https://github.com/MAJigsaw77/hxdiscord_rpc.git
 ```
 
-### Rich Presence on Android
-
-Discord only shows Rich Presence on Android through the [Discord Social SDK](https://discord.com/developers/docs/discord-social-sdk/overview), with the Discord app installed and signed in. The SDK is not bundled here, download it from the Developer Portal of your application.
-
-1. Prepare the SDK once:
-```bash
-python3 tools/prepare_social_sdk.py DiscordSocialSdk-x.y.z.zip discord-social-sdk
-```
-2. Build with the prepared folder:
-```bash
-lime build android -DDISCORD_SOCIAL_SDK=/full/path/to/discord-social-sdk
-```
-
-The same `Discord` API keeps working, and `Discord.IsSupported()` returns `true`. Without `DISCORD_SOCIAL_SDK` the library still builds on Android and iOS, but `Discord.IsSupported()` returns `false`. Voice permissions from the SDK are removed unless `--keep-voice` is passed.
-
-The Android backend keeps the last presence and sends it again on its own: failed updates are retried with backoff up to one minute, a lost or changed connection is detected through `ConnectivityManager` and the presence is restored once the network is back, identical updates are skipped, and the presence is refreshed every two minutes and when the app returns to the foreground.
-
 ### Usage Example
 
 Check out the [Sample Folder](sample/) for an example on how to use this library.

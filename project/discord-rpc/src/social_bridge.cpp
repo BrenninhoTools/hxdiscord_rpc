@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cstdio>
+#include <fstream>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -67,7 +69,17 @@ namespace
 	std::recursive_mutex Lock;
 	std::unique_ptr<discordpp::Client> Client;
 	std::optional<StoredPresence> Last;
-	hxdiscord_social::ErrorCallback LastErrorCallback = nullptr;
+	hxdiscord_social::EventCallback OnEvent = nullptr;
+
+	uint64_t ApplicationId = 0;
+	std::string StoragePath;
+	bool Authorizing = false;
+	bool AuthorizeDenied = false;
+	bool Refreshing = false;
+	bool RefreshPending = false;
+	int RefreshAttempts = 0;
+	Clock::time_point RefreshAt{};
+	bool WasReady = false;
 
 	bool Dirty = false;
 	bool InFlight = false;
@@ -187,9 +199,204 @@ namespace
 		return activity;
 	}
 
+	void Report(hxdiscord_social::Event event, int code, const std::string &message)
+	{
+		if (OnEvent != nullptr)
+			OnEvent(event, code, message.c_str());
+	}
+
+	std::string TokenFile()
+	{
+		if (StoragePath.empty() || ApplicationId == 0)
+			return std::string();
+
+		return StoragePath + "/hxdiscord_rpc_" + std::to_string(ApplicationId) + ".token";
+	}
+
+	std::string LoadRefreshToken()
+	{
+		const std::string file = TokenFile();
+		if (file.empty())
+			return std::string();
+
+		std::ifstream input(file);
+		std::string token;
+		std::getline(input, token);
+		return token;
+	}
+
+	void SaveRefreshToken(const std::string &token)
+	{
+		const std::string file = TokenFile();
+		if (file.empty() || token.empty())
+			return;
+
+		std::ofstream output(file, std::ios::trunc);
+		output << token;
+	}
+
+	void DeleteRefreshToken()
+	{
+		const std::string file = TokenFile();
+		if (!file.empty())
+			std::remove(file.c_str());
+	}
+
+	bool IsReady()
+	{
+		return Client && Client->GetStatus() == discordpp::Client::Status::Ready;
+	}
+
+	void Authorize();
+
+	void TokenReceived(discordpp::ClientResult result, std::string accessToken, std::string refreshToken, discordpp::AuthorizationTokenType tokenType,
+		int32_t expiresIn, std::string scopes)
+	{
+		(void)expiresIn;
+		(void)scopes;
+
+		std::lock_guard<std::recursive_mutex> guard(Lock);
+
+		Refreshing = false;
+
+		if (!Client)
+			return;
+
+		if (!result.Successful())
+		{
+			if (result.Retryable())
+			{
+				RefreshAttempts++;
+				RefreshPending = true;
+				RefreshAt = Clock::now() + Backoff(RefreshAttempts);
+				return;
+			}
+
+			DeleteRefreshToken();
+			Report(hxdiscord_social::Event::Errored, static_cast<int>(result.ErrorCode()), result.Error());
+			Authorize();
+			return;
+		}
+
+		RefreshAttempts = 0;
+		SaveRefreshToken(refreshToken);
+
+		Client->UpdateToken(tokenType, accessToken, [](discordpp::ClientResult updated) {
+			std::lock_guard<std::recursive_mutex> guard(Lock);
+
+			if (!Client)
+				return;
+
+			if (!updated.Successful())
+			{
+				Report(hxdiscord_social::Event::Errored, static_cast<int>(updated.ErrorCode()), updated.Error());
+				return;
+			}
+
+			const auto status = Client->GetStatus();
+			if (status == discordpp::Client::Status::Disconnected)
+				Client->Connect();
+		});
+	}
+
+	void Refresh()
+	{
+		if (!Client || Refreshing)
+			return;
+
+		const std::string token = LoadRefreshToken();
+		if (token.empty())
+		{
+			Authorize();
+			return;
+		}
+
+		Refreshing = true;
+		RefreshPending = false;
+		Client->RefreshToken(ApplicationId, token, TokenReceived);
+	}
+
+	void Authorize()
+	{
+		if (!Client || Authorizing || AuthorizeDenied)
+			return;
+
+		Authorizing = true;
+
+		auto verifier = Client->CreateAuthorizationCodeVerifier();
+
+		discordpp::AuthorizationArgs args{};
+		args.SetClientId(ApplicationId);
+		args.SetScopes(discordpp::Client::GetDefaultPresenceScopes());
+		args.SetCodeChallenge(verifier.Challenge());
+
+		Client->Authorize(args, [verifier](discordpp::ClientResult result, std::string code, std::string redirectUri) {
+			std::lock_guard<std::recursive_mutex> guard(Lock);
+
+			Authorizing = false;
+
+			if (!Client)
+				return;
+
+			if (!result.Successful())
+			{
+				AuthorizeDenied = true;
+				Report(hxdiscord_social::Event::Errored, static_cast<int>(result.ErrorCode()), result.Error());
+				return;
+			}
+
+			Refreshing = true;
+			Client->GetToken(ApplicationId, code, verifier.Verifier(), redirectUri, TokenReceived);
+		});
+	}
+
+	void StatusChanged(discordpp::Client::Status status, discordpp::Client::Error error, int32_t detail)
+	{
+		std::lock_guard<std::recursive_mutex> guard(Lock);
+
+		if (status == discordpp::Client::Status::Ready)
+		{
+			WasReady = true;
+
+			if (Last)
+			{
+				Dirty = true;
+				InFlight = false;
+				Attempts = 0;
+				NextAttempt = Clock::time_point{};
+			}
+
+			Report(hxdiscord_social::Event::Ready, 0, std::string());
+			return;
+		}
+
+		if (status != discordpp::Client::Status::Disconnected)
+			return;
+
+		InFlight = false;
+
+		if (WasReady || error != discordpp::Client::Error::None)
+		{
+			std::string message = discordpp::Client::ErrorToString(error);
+			if (error == discordpp::Client::Error::None)
+				message = discordpp::Client::StatusToString(status);
+
+			Report(hxdiscord_social::Event::Disconnected, static_cast<int>(error) * 10000 + detail, message);
+		}
+
+		WasReady = false;
+
+		if (error != discordpp::Client::Error::None)
+		{
+			RefreshPending = true;
+			RefreshAttempts++;
+			RefreshAt = Clock::now() + Backoff(RefreshAttempts);
+		}
+	}
+
 	void Send(Clock::time_point now)
 	{
-		if (!Client || !Last || !Dirty || InFlight || !IsOnline || now < NextAttempt)
+		if (!IsReady() || !Last || !Dirty || InFlight || !IsOnline || now < NextAttempt)
 			return;
 
 		const uint64_t generation = Generation;
@@ -217,8 +424,8 @@ namespace
 			Dirty = true;
 			NextAttempt = finished + Backoff(Attempts);
 
-			if (Attempts == 1 && LastErrorCallback != nullptr)
-				LastErrorCallback(static_cast<int>(result.ErrorCode()), result.Error().c_str());
+			if (Attempts == 1)
+				Report(hxdiscord_social::Event::Errored, static_cast<int>(result.ErrorCode()), result.Error());
 		});
 	}
 
@@ -237,20 +444,45 @@ namespace
 
 namespace hxdiscord_social
 {
-	bool Start(uint64_t applicationId)
+	bool Start(uint64_t applicationId, EventCallback onEvent)
 	{
 		std::lock_guard<std::recursive_mutex> guard(Lock);
 
+		OnEvent = onEvent;
+
 		if (applicationId == 0)
 			return false;
+
+		if (Client && ApplicationId != applicationId)
+		{
+			Client.reset();
+			Reset();
+		}
+
+		ApplicationId = applicationId;
 
 		if (!Client)
 		{
 			Client = std::make_unique<discordpp::Client>();
 			Reset();
-		}
+			Authorizing = false;
+			AuthorizeDenied = false;
+			Refreshing = false;
+			RefreshPending = false;
+			RefreshAttempts = 0;
+			WasReady = false;
 
-		Client->SetApplicationId(applicationId);
+			Client->SetApplicationId(applicationId);
+			Client->SetStatusChangedCallback(StatusChanged);
+			Client->SetTokenExpirationCallback([]() {
+				std::lock_guard<std::recursive_mutex> guard(Lock);
+				Refresh();
+			});
+
+			Refresh();
+		}
+		else if (IsReady())
+			Report(Event::Ready, 0, std::string());
 
 		if (Last)
 		{
@@ -270,11 +502,46 @@ namespace hxdiscord_social
 		if (!Client)
 			return;
 
-		Client->ClearRichPresence();
+		if (IsReady())
+			Client->ClearRichPresence();
+
+		Client->SetStatusChangedCallback([](discordpp::Client::Status, discordpp::Client::Error, int32_t) {});
+		Client->Disconnect();
 		discordpp::RunCallbacks();
 		Client.reset();
 		Reset();
-		LastErrorCallback = nullptr;
+		OnEvent = nullptr;
+		WasReady = false;
+	}
+
+	bool Ready()
+	{
+		std::lock_guard<std::recursive_mutex> guard(Lock);
+		return IsReady();
+	}
+
+	bool CurrentUser(User &user)
+	{
+		std::lock_guard<std::recursive_mutex> guard(Lock);
+
+		if (!IsReady())
+			return false;
+
+		auto handle = Client->GetCurrentUserV2();
+		if (!handle || handle->Id() == 0)
+			return false;
+
+		user.id = std::to_string(handle->Id());
+		user.username = handle->Username();
+		user.globalName = handle->GlobalName().value_or(std::string());
+		user.avatar = handle->Avatar().value_or(std::string());
+		return true;
+	}
+
+	void SetStoragePath(const char *path)
+	{
+		std::lock_guard<std::recursive_mutex> guard(Lock);
+		StoragePath = path != nullptr ? path : "";
 	}
 
 	bool Running()
@@ -294,12 +561,20 @@ namespace hxdiscord_social
 
 		const auto now = Clock::now();
 
-		if (NetworkChanged.exchange(false) && IsOnline && Last)
+		const bool networkBack = NetworkChanged.exchange(false) && IsOnline;
+
+		if (networkBack && Last)
 		{
 			Dirty = true;
 			Attempts = 0;
 			NextAttempt = now + NetworkSettle;
 		}
+
+		if (networkBack && RefreshPending)
+			RefreshAt = now + NetworkSettle;
+
+		if (RefreshPending && IsOnline && !Refreshing && !Authorizing && now >= RefreshAt && Client->GetStatus() == discordpp::Client::Status::Disconnected)
+			Refresh();
 
 		if (InFlight && now - SentAt > RequestTimeout)
 		{
@@ -315,14 +590,12 @@ namespace hxdiscord_social
 		Send(now);
 	}
 
-	void Update(const Presence &presence, ErrorCallback onError)
+	void Update(const Presence &presence)
 	{
 		std::lock_guard<std::recursive_mutex> guard(Lock);
 
 		if (!Client)
 			return;
-
-		LastErrorCallback = onError;
 
 		StoredPresence stored = Store(presence);
 		if (Last && *Last == stored && !Cleared)
@@ -356,7 +629,9 @@ namespace hxdiscord_social
 		InFlight = false;
 		Attempts = 0;
 		Cleared = true;
-		Client->ClearRichPresence();
+
+		if (IsReady())
+			Client->ClearRichPresence();
 	}
 
 	void SetOnline(bool online)
@@ -373,6 +648,21 @@ namespace hxdiscord_social
 }
 
 #if defined(__ANDROID__)
+extern "C" JNIEXPORT void JNICALL Java_org_haxe_extension_DiscordSocialInit_nativeSetStoragePath(JNIEnv *env, jclass type, jstring path)
+{
+	(void)type;
+
+	if (path == nullptr)
+		return;
+
+	const char *chars = env->GetStringUTFChars(path, nullptr);
+	if (chars == nullptr)
+		return;
+
+	hxdiscord_social::SetStoragePath(chars);
+	env->ReleaseStringUTFChars(path, chars);
+}
+
 extern "C" JNIEXPORT void JNICALL Java_org_haxe_extension_DiscordSocialInit_nativeNetworkChanged(JNIEnv *env, jclass type, jboolean online)
 {
 	(void)env;

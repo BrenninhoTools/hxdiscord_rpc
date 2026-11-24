@@ -26,6 +26,9 @@ extern class Discord
 	@:native('Discord_IsSupported')
 	static function IsSupported():Bool;
 
+	@:native('Discord_IsReady')
+	static function IsReady():Bool;
+
 	/**
 	 * Registers the application.
 	 *

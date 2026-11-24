@@ -18,6 +18,18 @@ VOICE_PERMISSIONS = [
 
 BUILD_GRADLE = '''configurations.maybeCreate("default")
 artifacts.add("default", file('discord_partner_sdk.aar'))
+dependencies.add("default", "androidx.browser:browser:1.8.0")
+'''
+
+AUTH_ACTIVITY = '''
+        <activity android:name="com.discord.socialsdk.AuthenticationActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="discord-{app_id}" />
+            </intent-filter>
+        </activity>
 '''
 
 
@@ -35,7 +47,17 @@ def strip_voice(manifest):
     return manifest
 
 
-def patch_aar(data, keep_voice):
+def add_auth_activity(manifest, app_id):
+    manifest = re.sub(r'\s*<activity[^>]*com\.discord\.socialsdk\.AuthenticationActivity[^>]*?(/>|>.*?</activity>)', '', manifest, flags=re.S)
+    activity = AUTH_ACTIVITY.format(app_id=app_id)
+    if re.search(r'<application[^>]*/>', manifest):
+        return re.sub(r'<application([^>]*)/>', lambda m: '<application' + m.group(1) + '>' + activity + '    </application>', manifest, count=1)
+    if '</application>' in manifest:
+        return manifest.replace('</application>', activity + '    </application>', 1)
+    return manifest.replace('</manifest>', '    <application>' + activity + '    </application>\n</manifest>', 1)
+
+
+def patch_aar(data, keep_voice, app_id):
     libraries = {}
     output = io.BytesIO()
     with zipfile.ZipFile(io.BytesIO(data)) as source, zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as target:
@@ -44,8 +66,12 @@ def patch_aar(data, keep_voice):
             match = re.match(r'^jni/([^/]+)/libdiscord_partner_sdk\.so$', item.filename)
             if match:
                 libraries[match.group(1)] = content
-            if item.filename == 'AndroidManifest.xml' and not keep_voice:
-                content = strip_voice(content.decode('utf-8')).encode('utf-8')
+            if item.filename == 'AndroidManifest.xml':
+                manifest = content.decode('utf-8')
+                if not keep_voice:
+                    manifest = strip_voice(manifest)
+                manifest = add_auth_activity(manifest, app_id)
+                content = manifest.encode('utf-8')
             target.writestr(item, content)
     return output.getvalue(), libraries
 
@@ -54,9 +80,13 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('sdk', help='DiscordSocialSdk zip')
     parser.add_argument('output', help='folder to pass as DISCORD_SOCIAL_SDK')
+    parser.add_argument('--app-id', required=True, help='Discord application id used for the discord-APP_ID redirect scheme')
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--keep-voice', action='store_true')
     args = parser.parse_args()
+
+    if not args.app_id.isdigit():
+        sys.exit('--app-id must be the numeric Discord application id')
 
     flavor = 'debug' if args.debug else 'release'
 
@@ -76,7 +106,7 @@ def main():
             with open(os.path.join(args.output, 'include', os.path.basename(name)), 'wb') as handle:
                 handle.write(archive.read(name))
 
-        aar, libraries = patch_aar(archive.read(aar_name), args.keep_voice)
+        aar, libraries = patch_aar(archive.read(aar_name), args.keep_voice, args.app_id)
 
     module = os.path.join(args.output, 'gradle')
     os.makedirs(module)

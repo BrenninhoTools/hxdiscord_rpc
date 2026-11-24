@@ -1,27 +1,29 @@
 #include "discord_rpc.hpp"
 #include "social_bridge.hpp"
 
-#include <atomic>
 #include <cstdlib>
 #include <cstring>
 #include <mutex>
 #include <string>
+#include <vector>
 
 namespace
 {
+	struct PendingEvent
+	{
+		hxdiscord_social::Event event;
+		int code;
+		std::string message;
+	};
+
 	std::mutex HandlerLock;
 	DiscordEventHandlers Handlers{};
-	std::atomic<bool> PendingReady{false};
-	std::atomic<bool> PendingError{false};
-	int LastErrorCode = 0;
-	std::string LastError;
+	std::vector<PendingEvent> Pending;
 
-	void OnError(int code, const char *message)
+	void OnEvent(hxdiscord_social::Event event, int code, const char *message)
 	{
 		std::lock_guard<std::mutex> guard(HandlerLock);
-		LastErrorCode = code;
-		LastError = message != nullptr ? message : "";
-		PendingError = true;
+		Pending.push_back({event, code, message != nullptr ? message : ""});
 	}
 }
 
@@ -42,6 +44,11 @@ bool Discord_IsSupported(void)
 	return true;
 }
 
+bool Discord_IsReady(void)
+{
+	return hxdiscord_social::Ready();
+}
+
 void Discord_Initialize(const char *applicationId, DiscordEventHandlers *handlers, bool autoRegister, const char *optionalSteamId)
 {
 	(void)autoRegister;
@@ -53,10 +60,13 @@ void Discord_Initialize(const char *applicationId, DiscordEventHandlers *handler
 			Handlers = *handlers;
 		else
 			std::memset(&Handlers, 0, sizeof(Handlers));
+		Pending.clear();
 	}
 
 	const uint64_t id = applicationId != nullptr ? std::strtoull(applicationId, nullptr, 10) : 0;
-	PendingReady = hxdiscord_social::Start(id);
+
+	if (!hxdiscord_social::Start(id, OnEvent))
+		OnEvent(hxdiscord_social::Event::Errored, -1, "Invalid application id");
 }
 
 void Discord_Shutdown(void)
@@ -65,8 +75,7 @@ void Discord_Shutdown(void)
 
 	std::lock_guard<std::mutex> guard(HandlerLock);
 	std::memset(&Handlers, 0, sizeof(Handlers));
-	PendingReady = false;
-	PendingError = false;
+	Pending.clear();
 }
 
 void Discord_RunCallbacks(void)
@@ -74,35 +83,48 @@ void Discord_RunCallbacks(void)
 	hxdiscord_social::Tick();
 
 	DiscordEventHandlers handlers;
-	int errorCode = 0;
-	std::string error;
-	bool ready = false;
-	bool errored = false;
+	std::vector<PendingEvent> events;
 
 	{
 		std::lock_guard<std::mutex> guard(HandlerLock);
 		handlers = Handlers;
-		ready = PendingReady.exchange(false);
-		errored = PendingError.exchange(false);
-		errorCode = LastErrorCode;
-		error = LastError;
+		events.swap(Pending);
 	}
 
-	if (ready && handlers.ready != nullptr)
+	for (const PendingEvent &entry : events)
 	{
-		DiscordUser user{};
-		user.userId = "0";
-		user.username = "";
-		user.globalName = "";
-		user.discriminator = "0";
-		user.avatar = "";
-		user.premiumType = DiscordPremiumType_None;
-		user.bot = false;
-		handlers.ready(&user);
-	}
+		switch (entry.event)
+		{
+			case hxdiscord_social::Event::Ready:
+			{
+				if (handlers.ready == nullptr)
+					break;
 
-	if (errored && handlers.errored != nullptr)
-		handlers.errored(errorCode, error.c_str());
+				hxdiscord_social::User current;
+				if (!hxdiscord_social::CurrentUser(current))
+					break;
+
+				DiscordUser user{};
+				user.userId = current.id.c_str();
+				user.username = current.username.c_str();
+				user.globalName = current.globalName.c_str();
+				user.discriminator = "0";
+				user.avatar = current.avatar.c_str();
+				user.premiumType = DiscordPremiumType_None;
+				user.bot = false;
+				handlers.ready(&user);
+				break;
+			}
+			case hxdiscord_social::Event::Disconnected:
+				if (handlers.disconnected != nullptr)
+					handlers.disconnected(entry.code, entry.message.c_str());
+				break;
+			case hxdiscord_social::Event::Errored:
+				if (handlers.errored != nullptr)
+					handlers.errored(entry.code, entry.message.c_str());
+				break;
+		}
+	}
 }
 
 void Discord_UpdateConnection(void)
@@ -138,7 +160,7 @@ void Discord_UpdatePresence(const DiscordRichPresence *presence)
 		data.buttons[i].url = presence->buttons[i].url;
 	}
 
-	hxdiscord_social::Update(data, OnError);
+	hxdiscord_social::Update(data);
 }
 
 void Discord_ClearPresence(void)

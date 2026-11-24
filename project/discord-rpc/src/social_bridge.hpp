@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <string>
 
 namespace hxdiscord_social
 {
@@ -28,14 +29,32 @@ namespace hxdiscord_social
 		Button buttons[2];
 	};
 
-	typedef void (*ErrorCallback)(int code, const char *message);
+	struct User
+	{
+		std::string id;
+		std::string username;
+		std::string globalName;
+		std::string avatar;
+	};
 
-	bool Start(uint64_t applicationId);
+	enum class Event
+	{
+		Ready,
+		Disconnected,
+		Errored
+	};
+
+	typedef void (*EventCallback)(Event event, int code, const char *message);
+
+	bool Start(uint64_t applicationId, EventCallback onEvent);
 	void Stop();
 	bool Running();
+	bool Ready();
+	bool CurrentUser(User &user);
 	void Tick();
-	void Update(const Presence &presence, ErrorCallback onError);
+	void Update(const Presence &presence);
 	void Clear();
 	void SetOnline(bool online);
 	bool Online();
+	void SetStoragePath(const char *path);
 }

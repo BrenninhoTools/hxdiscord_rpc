@@ -13,6 +13,8 @@ public class DiscordSocialInit extends Extension
 {
 	private static ConnectivityManager.NetworkCallback networkCallback;
 
+	private static native void nativeSetStoragePath(String path);
+
 	private static native void nativeNetworkChanged(boolean online);
 
 	private static native void nativeResumed();
@@ -21,6 +23,7 @@ public class DiscordSocialInit extends Extension
 	public void onCreate(Bundle savedInstanceState)
 	{
 		attach();
+		storage();
 		registerNetwork();
 	}
 
@@ -28,6 +31,7 @@ public class DiscordSocialInit extends Extension
 	public void onResume()
 	{
 		attach();
+		storage();
 		notifyNetwork(isOnline());
 
 		try
@@ -49,6 +53,17 @@ public class DiscordSocialInit extends Extension
 		{
 			if (mainActivity != null)
 				DiscordSocialSdkInit.setEngineActivity(mainActivity);
+		}
+		catch (Throwable ignored) {}
+	}
+
+	private static void storage()
+	{
+		try
+		{
+			Context context = mainContext != null ? mainContext : mainActivity;
+			if (context != null)
+				nativeSetStoragePath(context.getFilesDir().getAbsolutePath());
 		}
 		catch (Throwable ignored) {}
 	}

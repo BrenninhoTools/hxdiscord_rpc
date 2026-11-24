@@ -313,6 +313,11 @@ bool Discord_IsSupported(void)
 #endif
 }
 
+bool Discord_IsReady(void)
+{
+	return Connection != nullptr && Connection->IsOpen();
+}
+
 void Discord_Initialize(const char *applicationId, DiscordEventHandlers *handlers, bool autoRegister, const char *optionalSteamId)
 {
 	if (!Discord_IsSupported())

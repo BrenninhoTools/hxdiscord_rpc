@@ -11,8 +11,8 @@
 		"ios"
 	],
 	"description": "Haxe/hxcpp @:native bindings for Discord RPC.",
-	"version": "1.5.0",
-	"releasenote": "Rich Presence on Android through the Discord Social SDK.",
+	"version": "1.6.0",
+	"releasenote": "Android account linking through the Social SDK, real ready/disconnected detection and Discord.IsReady().",
 	"contributors": [
 		"MAJigsaw77"
 	],
