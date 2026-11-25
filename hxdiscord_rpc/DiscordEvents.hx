@@ -49,8 +49,60 @@ class DiscordPresence
 	public var joinSecret:String = null;
 	public var spectateSecret:String = null;
 	public var instance:Bool = false;
+	public var statusDisplayType:Int = 0;
+	public var stateUrl:String = null;
+	public var detailsUrl:String = null;
+	public var largeImageUrl:String = null;
+	public var smallImageUrl:String = null;
 
 	public function new() {}
+
+	public function setButton(index:Int, label:String, url:String):DiscordPresence
+	{
+		if (index == 0)
+		{
+			button1Label = label;
+			button1Url = url;
+		}
+		else if (index == 1)
+		{
+			button2Label = label;
+			button2Url = url;
+		}
+		return this;
+	}
+
+	public function setParty(id:String, size:Int, max:Int, privacy:Int = 0):DiscordPresence
+	{
+		partyId = id;
+		partySize = size;
+		partyMax = max;
+		partyPrivacy = privacy;
+		return this;
+	}
+
+	public function startNow():DiscordPresence
+	{
+		startTimestamp = Math.floor(Date.now().getTime() / 1000);
+		endTimestamp = 0;
+		return this;
+	}
+
+	public function countdown(seconds:Float):DiscordPresence
+	{
+		var now:Float = Math.floor(Date.now().getTime() / 1000);
+		startTimestamp = now;
+		endTimestamp = now + Math.max(0, Math.round(seconds));
+		return this;
+	}
+
+	public function progress(elapsed:Float, length:Float):DiscordPresence
+	{
+		var now:Float = Math.floor(Date.now().getTime() / 1000);
+		startTimestamp = now - Math.max(0, Math.round(elapsed));
+		endTimestamp = length > 0 ? startTimestamp + Math.round(length) : 0;
+		return this;
+	}
 
 	public function copy():DiscordPresence
 	{
@@ -136,11 +188,17 @@ class DiscordEvents
 		if (!initialized || presence == null)
 			return;
 
-		DiscordQueue.UpdatePresence(presence.type, utf8(presence.state), utf8(presence.details), presence.startTimestamp, presence.endTimestamp,
+		DiscordQueue.UpdatePresenceEx(presence.type, utf8(presence.state), utf8(presence.details), presence.startTimestamp, presence.endTimestamp,
 			utf8(presence.largeImageKey), utf8(presence.largeImageText), utf8(presence.smallImageKey), utf8(presence.smallImageText),
 			utf8(presence.partyId), presence.partySize, presence.partyMax, presence.partyPrivacy, utf8(presence.button1Label),
 			utf8(presence.button1Url), utf8(presence.button2Label), utf8(presence.button2Url), utf8(presence.matchSecret),
-			utf8(presence.joinSecret), utf8(presence.spectateSecret), presence.instance);
+			utf8(presence.joinSecret), utf8(presence.spectateSecret), presence.instance, presence.statusDisplayType, utf8(presence.stateUrl),
+			utf8(presence.detailsUrl), utf8(presence.largeImageUrl), utf8(presence.smallImageUrl));
+	}
+
+	public static function setActivityName(name:String):Void
+	{
+		DiscordQueue.SetActivityName(utf8(name));
 	}
 
 	public static function clearPresence():Void

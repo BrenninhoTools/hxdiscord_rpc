@@ -288,6 +288,31 @@ extern class DiscordRichPresence
 	 * Whether this is an instance of the rich presence.
 	 */
 	var instance:Bool;
+
+	/**
+	 * Which field is shown in the member list status (0 name, 1 state, 2 details).
+	 */
+	var statusDisplayType:Int;
+
+	/**
+	 * URL opened when the state line is clicked.
+	 */
+	var stateUrl:cpp.ConstCharStar;
+
+	/**
+	 * URL opened when the details line is clicked.
+	 */
+	var detailsUrl:cpp.ConstCharStar;
+
+	/**
+	 * URL opened when the large image is clicked.
+	 */
+	var largeImageUrl:cpp.ConstCharStar;
+
+	/**
+	 * URL opened when the small image is clicked.
+	 */
+	var smallImageUrl:cpp.ConstCharStar;
 }
 
 /**

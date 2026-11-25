@@ -38,6 +38,8 @@ function update():Void
 				var presence = new DiscordPresence();
 				presence.details = 'Playing a song';
 				presence.state = 'Ação';
+				presence.statusDisplayType = 2;
+				presence.setButton(0, 'Download', 'https://example.com').setParty('lobby', 1, 4).startNow();
 				DiscordEvents.updatePresence(presence);
 			case Disconnected(code, message):
 			case Errored(code, message):
@@ -48,6 +50,8 @@ function update():Void
 ```
 
 `DiscordPresence` keeps plain Haxe strings and sends them as UTF-8, so accents and emoji show correctly. The raw `Discord` and `Types` bindings are still available.
+
+`statusDisplayType` picks what the member list shows (0 name, 1 state, 2 details), `stateUrl`, `detailsUrl`, `largeImageUrl` and `smallImageUrl` make those fields clickable, and `startNow`, `countdown` and `progress` fill the timestamps. Party info is now sent together with buttons; only secrets are dropped when buttons are set, as Discord requires.
 
 ### Usage Example
 

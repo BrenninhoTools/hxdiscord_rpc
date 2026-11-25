@@ -45,4 +45,15 @@ extern class DiscordQueue
 		partyId:cpp.ConstCharStar, partySize:Int, partyMax:Int, partyPrivacy:Int, button1Label:cpp.ConstCharStar, button1Url:cpp.ConstCharStar,
 		button2Label:cpp.ConstCharStar, button2Url:cpp.ConstCharStar, matchSecret:cpp.ConstCharStar, joinSecret:cpp.ConstCharStar,
 		spectateSecret:cpp.ConstCharStar, instance:Bool):Void;
+
+	@:native('DiscordQueue_UpdatePresenceEx')
+	static function UpdatePresenceEx(type:Int, state:cpp.ConstCharStar, details:cpp.ConstCharStar, startTimestamp:Float, endTimestamp:Float,
+		largeImageKey:cpp.ConstCharStar, largeImageText:cpp.ConstCharStar, smallImageKey:cpp.ConstCharStar, smallImageText:cpp.ConstCharStar,
+		partyId:cpp.ConstCharStar, partySize:Int, partyMax:Int, partyPrivacy:Int, button1Label:cpp.ConstCharStar, button1Url:cpp.ConstCharStar,
+		button2Label:cpp.ConstCharStar, button2Url:cpp.ConstCharStar, matchSecret:cpp.ConstCharStar, joinSecret:cpp.ConstCharStar,
+		spectateSecret:cpp.ConstCharStar, instance:Bool, statusDisplayType:Int, stateUrl:cpp.ConstCharStar, detailsUrl:cpp.ConstCharStar,
+		largeImageUrl:cpp.ConstCharStar, smallImageUrl:cpp.ConstCharStar):Void;
+
+	@:native('DiscordQueue_SetActivityName')
+	static function SetActivityName(name:cpp.ConstCharStar):Void;
 }

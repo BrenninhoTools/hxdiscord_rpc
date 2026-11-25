@@ -11,8 +11,8 @@
 		"ios"
 	],
 	"description": "Haxe/hxcpp @:native bindings for Discord RPC.",
-	"version": "1.7.0",
-	"releasenote": "Native event queue (DiscordEvents) with no Haxe callbacks, so it builds on scriptable/cppia builds and every compiler, plus UTF-8 safe presence updates.",
+	"version": "1.8.0",
+	"releasenote": "Status display type, clickable state/details/image URLs, party sent alongside buttons, presence helpers and setActivityName.",
 	"contributors": [
 		"MAJigsaw77"
 	],

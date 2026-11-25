@@ -114,6 +114,14 @@ size_t JsonWriteRichPresenceObj(char *dest, size_t maxLen, int nonce, int pid, c
 
 				WriteOptionalString(writer, "state", presence->state);
 				WriteOptionalString(writer, "details", presence->details);
+				WriteOptionalString(writer, "state_url", presence->stateUrl);
+				WriteOptionalString(writer, "details_url", presence->detailsUrl);
+
+				if (presence->statusDisplayType == 1 || presence->statusDisplayType == 2)
+				{
+					WriteKey(writer, "status_display_type");
+					writer.Int(presence->statusDisplayType);
+				}
 
 				if (presence->startTimestamp || presence->endTimestamp)
 				{
@@ -140,12 +148,16 @@ size_t JsonWriteRichPresenceObj(char *dest, size_t maxLen, int nonce, int pid, c
 					WriteObject assets(writer, "assets");
 					WriteOptionalString(writer, "large_image", presence->largeImageKey);
 					WriteOptionalString(writer, "large_text", presence->largeImageText);
+					WriteOptionalString(writer, "large_url", presence->largeImageUrl);
 					WriteOptionalString(writer, "small_image", presence->smallImageKey);
 					WriteOptionalString(writer, "small_text", presence->smallImageText);
+					WriteOptionalString(writer, "small_url", presence->smallImageUrl);
 				}
 
-				if ((presence->buttons[0].label && presence->buttons[0].label[0]) &&
-				    (presence->buttons[0].url && presence->buttons[0].url[0]))
+				const bool hasButtons = (presence->buttons[0].label && presence->buttons[0].label[0] && presence->buttons[0].url && presence->buttons[0].url[0]) ||
+				                        (presence->buttons[1].label && presence->buttons[1].label[0] && presence->buttons[1].url && presence->buttons[1].url[0]);
+
+				if (hasButtons)
 				{
 					WriteArray buttons(writer, "buttons");
 
@@ -163,33 +175,32 @@ size_t JsonWriteRichPresenceObj(char *dest, size_t maxLen, int nonce, int pid, c
 						WriteOptionalString(writer, "url", button.url);
 					}
 				}
-				else
+
+				if ((presence->partyId && presence->partyId[0]) || presence->partySize || presence->partyMax)
 				{
-					if ((presence->partyId && presence->partyId[0]) || presence->partySize || presence->partyMax)
+					WriteObject party(writer, "party");
+					WriteOptionalString(writer, "id", presence->partyId);
+
+					if (presence->partySize && presence->partyMax)
 					{
-						WriteObject party(writer, "party");
-						WriteOptionalString(writer, "id", presence->partyId);
-
-						if (presence->partySize && presence->partyMax)
-						{
-							WriteArray size(writer, "size");
-							writer.Int(presence->partySize);
-							writer.Int(presence->partyMax);
-						}
-
-						WriteKey(writer, "privacy");
-						writer.Int(presence->partyPrivacy);
+						WriteArray size(writer, "size");
+						writer.Int(presence->partySize);
+						writer.Int(presence->partyMax);
 					}
 
-					if ((presence->matchSecret && presence->matchSecret[0]) ||
-					    (presence->joinSecret && presence->joinSecret[0]) ||
-					    (presence->spectateSecret && presence->spectateSecret[0]))
-					{
-						WriteObject secrets(writer, "secrets");
-						WriteOptionalString(writer, "match", presence->matchSecret);
-						WriteOptionalString(writer, "join", presence->joinSecret);
-						WriteOptionalString(writer, "spectate", presence->spectateSecret);
-					}
+					WriteKey(writer, "privacy");
+					writer.Int(presence->partyPrivacy);
+				}
+
+				if (!hasButtons &&
+				    ((presence->matchSecret && presence->matchSecret[0]) ||
+				     (presence->joinSecret && presence->joinSecret[0]) ||
+				     (presence->spectateSecret && presence->spectateSecret[0])))
+				{
+					WriteObject secrets(writer, "secrets");
+					WriteOptionalString(writer, "match", presence->matchSecret);
+					WriteOptionalString(writer, "join", presence->joinSecret);
+					WriteOptionalString(writer, "spectate", presence->spectateSecret);
 				}
 
 				writer.Key("instance");

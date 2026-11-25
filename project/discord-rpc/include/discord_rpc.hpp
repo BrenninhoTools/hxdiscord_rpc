@@ -60,6 +60,11 @@ typedef struct DiscordRichPresence
 	const char *joinSecret;
 	const char *spectateSecret;
 	bool instance;
+	int statusDisplayType;
+	const char *stateUrl;
+	const char *detailsUrl;
+	const char *largeImageUrl;
+	const char *smallImageUrl;
 } DiscordRichPresence;
 
 typedef struct DiscordUser

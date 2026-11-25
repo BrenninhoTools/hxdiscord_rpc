@@ -38,10 +38,11 @@ class Main
 						presence.details = 'Frustração';
 						presence.largeImageKey = 'canary-large';
 						presence.smallImageKey = 'ptb-small';
-						presence.button1Label = 'Test 1';
-						presence.button1Url = 'https://example.com';
-						presence.button2Label = 'Test 2';
-						presence.button2Url = 'https://discord.gg/fortnite';
+						presence.statusDisplayType = 2;
+						presence.detailsUrl = 'https://example.com';
+						presence.setButton(0, 'Test 1', 'https://example.com');
+						presence.setButton(1, 'Test 2', 'https://discord.gg/fortnite');
+						presence.setParty('sample', 1, 4).progress(0, 180);
 						DiscordEvents.updatePresence(presence);
 					case Disconnected(code, message):
 						Sys.println('Discord: Disconnected ($code:$message)');

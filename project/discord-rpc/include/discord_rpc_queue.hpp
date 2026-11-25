@@ -43,3 +43,9 @@ void DiscordQueue_UpdatePresence(int type, const char *state, const char *detail
 	const char *largeImageText, const char *smallImageKey, const char *smallImageText, const char *partyId, int partySize, int partyMax, int partyPrivacy,
 	const char *button1Label, const char *button1Url, const char *button2Label, const char *button2Url, const char *matchSecret, const char *joinSecret,
 	const char *spectateSecret, bool instance);
+void DiscordQueue_UpdatePresenceEx(int type, const char *state, const char *details, double startTimestamp, double endTimestamp, const char *largeImageKey,
+	const char *largeImageText, const char *smallImageKey, const char *smallImageText, const char *partyId, int partySize, int partyMax, int partyPrivacy,
+	const char *button1Label, const char *button1Url, const char *button2Label, const char *button2Url, const char *matchSecret, const char *joinSecret,
+	const char *spectateSecret, bool instance, int statusDisplayType, const char *stateUrl, const char *detailsUrl, const char *largeImageUrl,
+	const char *smallImageUrl);
+void DiscordQueue_SetActivityName(const char *name);

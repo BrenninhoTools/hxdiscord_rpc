@@ -256,6 +256,17 @@ void DiscordQueue_UpdatePresence(int type, const char *state, const char *detail
 	const char *button1Label, const char *button1Url, const char *button2Label, const char *button2Url, const char *matchSecret, const char *joinSecret,
 	const char *spectateSecret, bool instance)
 {
+	DiscordQueue_UpdatePresenceEx(type, state, details, startTimestamp, endTimestamp, largeImageKey, largeImageText, smallImageKey, smallImageText, partyId,
+		partySize, partyMax, partyPrivacy, button1Label, button1Url, button2Label, button2Url, matchSecret, joinSecret, spectateSecret, instance, 0, nullptr,
+		nullptr, nullptr, nullptr);
+}
+
+void DiscordQueue_UpdatePresenceEx(int type, const char *state, const char *details, double startTimestamp, double endTimestamp, const char *largeImageKey,
+	const char *largeImageText, const char *smallImageKey, const char *smallImageText, const char *partyId, int partySize, int partyMax, int partyPrivacy,
+	const char *button1Label, const char *button1Url, const char *button2Label, const char *button2Url, const char *matchSecret, const char *joinSecret,
+	const char *spectateSecret, bool instance, int statusDisplayType, const char *stateUrl, const char *detailsUrl, const char *largeImageUrl,
+	const char *smallImageUrl)
+{
 	DiscordRichPresence presence = {};
 	presence.type = (DiscordActivityType)type;
 	presence.state = nullIfEmpty(state);
@@ -278,5 +289,15 @@ void DiscordQueue_UpdatePresence(int type, const char *state, const char *detail
 	presence.joinSecret = nullIfEmpty(joinSecret);
 	presence.spectateSecret = nullIfEmpty(spectateSecret);
 	presence.instance = instance;
+	presence.statusDisplayType = statusDisplayType;
+	presence.stateUrl = nullIfEmpty(stateUrl);
+	presence.detailsUrl = nullIfEmpty(detailsUrl);
+	presence.largeImageUrl = nullIfEmpty(largeImageUrl);
+	presence.smallImageUrl = nullIfEmpty(smallImageUrl);
 	Discord_UpdatePresence(&presence);
+}
+
+void DiscordQueue_SetActivityName(const char *name)
+{
+	Discord_SetActivityName(nullIfEmpty(name));
 }
